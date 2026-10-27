@@ -66,7 +66,7 @@ Same as Recipe Box: push to GitHub, create a Railway service from the repo, add 
 
 ## Before go-live checklist
 
-- [ ] Replace `SUPPORT_EMAIL` in `src/lib/config.ts` with a real inbox
+- [x] Replace `SUPPORT_EMAIL` in `src/lib/config.ts` with a real inbox
 - [ ] Have the Terms and Privacy pages reviewed (`src/app/terms`, `src/app/privacy`)
 - [ ] Check the name and domain are free to use
 - [ ] Send one real fax to a fax number you control and check the confirmation PDF
