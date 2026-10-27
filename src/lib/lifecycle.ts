@@ -3,7 +3,7 @@
 // fax is never sent or refunded twice.
 import type { Fax } from "@prisma/client";
 import { prisma } from "./db";
-import { MAX_ATTEMPTS, appUrl, faxProviderName, stripeEnabled } from "./config";
+import { MAX_ATTEMPTS, UNPAID_DOCUMENT_LIFETIME_MS, appUrl, faxProviderName, stripeEnabled } from "./config";
 import { getProvider } from "./fax";
 import { mockOutcome } from "./fax/mock";
 import { RETRYABLE_REASONS } from "./fax/types";
@@ -29,7 +29,23 @@ export async function markPaidAndSend(token: string, payment: { sessionId?: stri
   if (claimed.count === 0) return; // already paid (this is a repeat notification)
   const fax = await prisma.fax.findUniqueOrThrow({ where: { token } });
   await logEvent(fax.id, "paid", payment.paymentIntent ? `payment ${payment.paymentIntent}` : "simulated payment");
+  if (!fax.pdf) {
+    // Paid after the unpaid document was cleaned up (checkout left open too long).
+    await prisma.fax.update({ where: { id: fax.id }, data: { status: "FAILED", failedAt: new Date(), failureReason: "expired" } });
+    await logEvent(fax.id, "failed", "expired");
+    await refund(fax.id);
+    return;
+  }
   await dispatch(fax.id);
+}
+
+/** Deletes the document from uploads that were never paid for. Runs hourly (see instrumentation-node.ts). */
+export async function purgeAbandonedDrafts(): Promise<number> {
+  const { count } = await prisma.fax.updateMany({
+    where: { status: "DRAFT", pdf: { not: null }, createdAt: { lt: new Date(Date.now() - UNPAID_DOCUMENT_LIFETIME_MS) } },
+    data: { pdf: null },
+  });
+  return count;
 }
 
 /** Hands the PDF to the fax line for one attempt. */

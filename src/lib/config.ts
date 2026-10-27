@@ -7,6 +7,9 @@ export const MAX_DOC_PAGES = 50;
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB total
 export const MAX_ATTEMPTS = 2; // first try + one automatic retry
 export const DRAFTS_PER_HOUR_PER_VISITOR = 20;
+// Unpaid uploads lose their document after this long. The cleanup runs hourly,
+// so nothing unpaid is kept past 24 hours (the Privacy page promises that).
+export const UNPAID_DOCUMENT_LIFETIME_MS = 23 * 60 * 60 * 1000;
 
 // Price tiers by document pages (the cover page is free).
 export const PRICE_TIERS = [

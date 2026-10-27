@@ -11,6 +11,7 @@ export default function Privacy() {
       <p>For each fax we keep the number it went to, the page count, the file names, the delivery result, and your email if you gave one.</p>
       <h2>What we delete</h2>
       <p>The document itself is deleted from our servers as soon as the fax is delivered or our final attempt ends.</p>
+      <p>If you upload a document but don't pay, it's deleted within 24 hours.</p>
       <h2>Payments</h2>
       <p>Card payments are handled by Stripe. We never see or store your card number.</p>
       <h2>Fax delivery</h2>

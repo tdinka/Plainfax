@@ -165,13 +165,17 @@ export default function StatusView({ initial, justPaid }: { initial: FaxView; ju
 
         {s === "FAILED" && (
           <div className="mt-6 rounded-lg bg-alert-50 p-4 text-sm">
-            <p className="font-medium text-alert">We tried {fax.attempts} time{fax.attempts === 1 ? "" : "s"} and couldn't get it through.</p>
+            <p className="font-medium text-alert">
+              {fax.attempts > 0
+                ? `We tried ${fax.attempts} time${fax.attempts === 1 ? "" : "s"} and couldn't get it through.`
+                : "We couldn't send this fax."}
+            </p>
             <p className="mt-1 text-ink">
               {fax.refunded
                 ? `Your ${fax.price} has been refunded. Card refunds usually show up within 5 to 10 business days.`
                 : "We're refunding your payment now."}
             </p>
-            <p className="mt-1 text-ink-soft">Double-check the number with the person you're faxing, then try again.</p>
+            {fax.attempts > 0 && <p className="mt-1 text-ink-soft">Double-check the number with the person you're faxing, then try again.</p>}
           </div>
         )}
       </div>

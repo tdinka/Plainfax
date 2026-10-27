@@ -43,6 +43,8 @@ export function describeFailure(reason: string | null | undefined): string {
       return "The number answered, but it isn't a fax machine.";
     case "send_error":
       return "Our fax line had a problem sending.";
+    case "expired":
+      return "Your upload expired before payment went through (we delete unpaid documents after 24 hours). Please upload it again.";
     default:
       return "The receiving fax machine didn't accept the fax.";
   }

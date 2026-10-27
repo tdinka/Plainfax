@@ -13,6 +13,9 @@ export async function POST(_req: Request, { params }: { params: { token: string 
   const fax = await prisma.fax.findUnique({ where: { token: params.token } });
   if (!fax) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (fax.status !== "DRAFT") return NextResponse.json({ url: `/f/${fax.token}` });
+  if (!fax.pdf) {
+    return NextResponse.json({ error: "This upload has expired (we delete unpaid documents after 24 hours). Please start a new fax." }, { status: 410 });
+  }
 
   if (!stripeEnabled()) {
     await markPaidAndSend(fax.token, {});

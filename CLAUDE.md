@@ -8,6 +8,7 @@ Pay-per-fax web app: upload → price → pay once → fax sent → delivery con
 - US and Canada numbers only. Sending only, no receiving.
 - Prices live in `src/lib/config.ts` (`PRICE_TIERS`); the cover page is free and not counted.
 - The uploaded document is deleted (pdf set to null) as soon as a fax is delivered or finally fails. Keep it that way.
+- Unpaid uploads lose their document within 24 hours (`purgeAbandonedDrafts`, run hourly from `src/instrumentation-node.ts`); paying after that refunds automatically. The Privacy page promises this.
 - Working name "Plainfax", set only in `APP_NAME`.
 
 ## Stack (same as Recipe Box)
