@@ -1,0 +1,43 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-display: "Archivo Variable";
+  --font-body: "Public Sans Variable";
+  --font-mono: "IBM Plex Mono";
+  color-scheme: light;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body { @apply bg-paper text-ink font-sans antialiased; }
+h1, h2, h3 { text-wrap: balance; }
+
+@layer components {
+  /* The one green button style: only for the main action on a screen. */
+  .btn-send {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-signal px-5 py-3 font-display text-base font-semibold text-white
+      shadow-[0_1px_0_rgba(0,0,0,0.15)] transition hover:bg-signal-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+      focus-visible:outline-signal disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-quiet {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-white px-4 py-2.5 text-sm font-medium text-ink
+      transition hover:border-ink-faint focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink;
+  }
+  .field {
+    @apply w-full rounded-lg border border-line bg-white px-3 py-2.5 text-base text-ink placeholder:text-ink-faint
+      focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/10;
+  }
+  .label { @apply mb-1.5 block text-sm font-medium text-ink; }
+  .eyebrow { @apply font-mono text-xs uppercase tracking-[0.14em] text-ink-soft; }
+  /* Thermal-paper perforation along the top of a "fax sheet" card */
+  .sheet { @apply relative rounded-xl border border-line bg-white shadow-[0_12px_32px_-16px_rgba(21,32,43,0.25)]; }
+  .sheet::before {
+    content: ""; position: absolute; left: 16px; right: 16px; top: -1px; height: 4px;
+    background: repeating-linear-gradient(90deg, #15202B 0 6px, transparent 6px 12px); opacity: .12; border-radius: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

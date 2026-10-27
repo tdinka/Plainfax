@@ -1,0 +1,29 @@
+// POST /api/faxes/[token]/checkout — start payment. With Stripe keys this
+// returns a Stripe Checkout link; without them it simulates payment.
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/db";
+import { stripeEnabled } from "@/lib/config";
+import { markPaidAndSend } from "@/lib/lifecycle";
+import { createCheckout } from "@/lib/payments";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+export async function POST(_req: Request, { params }: { params: { token: string } }) {
+  const fax = await prisma.fax.findUnique({ where: { token: params.token } });
+  if (!fax) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (fax.status !== "DRAFT") return NextResponse.json({ url: `/f/${fax.token}` });
+
+  if (!stripeEnabled()) {
+    await markPaidAndSend(fax.token, {});
+    return NextResponse.json({ url: `/f/${fax.token}`, simulated: true });
+  }
+  try {
+    const { url, sessionId } = await createCheckout(fax);
+    await prisma.fax.update({ where: { id: fax.id }, data: { stripeSessionId: sessionId } });
+    return NextResponse.json({ url });
+  } catch (err) {
+    console.error("checkout failed", err);
+    return NextResponse.json({ error: "We couldn't start checkout. Please try again." }, { status: 500 });
+  }
+}

@@ -1,0 +1,71 @@
+// Plainfax — data model.
+// One row per fax. The document itself (pdf) is deleted as soon as the fax
+// is delivered or finally fails, so we never keep people's paperwork.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FaxStatus {
+  DRAFT      // uploaded, not paid yet
+  PAID       // paid, about to be handed to the fax line
+  SENDING    // the fax line is dialing / transmitting
+  DELIVERED  // done
+  FAILED     // gave up after retries (payment is refunded)
+}
+
+model Fax {
+  id         String    @id @default(cuid())
+  token      String    @unique // secret part of the status page link (/f/[token])
+  mediaToken String    @unique // secret link the fax line uses to fetch the PDF
+  status     FaxStatus @default(DRAFT)
+
+  toNumber   String // E.164, e.g. +12125550123
+  pageCount  Int    // pages in the uploaded document (cover page not counted)
+  totalPages Int    // pages actually sent, including the cover page
+  hasCover   Boolean @default(false)
+  priceCents Int
+  fileNames  String // shown on the status page, e.g. "lease.pdf, id.jpg"
+  pdf        Bytes? // the combined PDF; set to null once the fax is finished
+  email      String?
+
+  stripeSessionId     String? @unique
+  stripePaymentIntent String?
+  paidAt              DateTime?
+
+  provider      String?   // "mock" or "telnyx"
+  providerFaxId String?   @unique
+  attempts      Int       @default(0)
+  failureReason String?
+  sentAt        DateTime? // when the current attempt started
+  nextAttemptAt DateTime? // set while waiting to retry a busy/no-answer line
+  deliveredAt   DateTime?
+  failedAt      DateTime?
+  refundedAt    DateTime?
+  refundId      String?
+
+  ipHash    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events FaxEvent[]
+
+  @@index([ipHash, createdAt])
+}
+
+// A simple log of what happened to each fax (useful for support questions).
+model FaxEvent {
+  id        String   @id @default(cuid())
+  fax       Fax      @relation(fields: [faxId], references: [id], onDelete: Cascade)
+  faxId     String
+  type      String
+  detail    String?
+  createdAt DateTime @default(now())
+
+  @@index([faxId, createdAt])
+}

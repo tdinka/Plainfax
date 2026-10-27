@@ -1,0 +1,60 @@
+import type { Metadata, Viewport } from "next";
+import Link from "next/link";
+import "@fontsource-variable/archivo";
+import "@fontsource-variable/public-sans";
+import "@fontsource/ibm-plex-mono/400.css";
+import "@fontsource/ibm-plex-mono/500.css";
+import "./globals.css";
+import { APP_NAME, SUPPORT_EMAIL } from "@/lib/config";
+
+export const metadata: Metadata = {
+  title: `${APP_NAME}: Send a fax online for $2.99, no subscription`,
+  description:
+    "Send a fax from your phone or computer. Upload a PDF or photo, enter the fax number, pay $2.99 once. Automatic refund if it can't be delivered.",
+  applicationName: APP_NAME,
+};
+
+export const viewport: Viewport = { themeColor: "#15202B", width: "device-width", initialScale: 1 };
+
+function Wordmark() {
+  return (
+    <Link href="/" className="flex items-center gap-2 font-display text-lg font-bold tracking-tight">
+      <span aria-hidden className="flex gap-[3px]">
+        <span className="h-2 w-2 rounded-full bg-ink" />
+        <span className="h-2 w-2 rounded-full bg-ink/60" />
+        <span className="h-2 w-2 rounded-full bg-signal" />
+      </span>
+      {APP_NAME}
+    </Link>
+  );
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body className="min-h-screen">
+        <header className="border-b border-line bg-paper-50/80 backdrop-blur">
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
+            <Wordmark />
+            <nav className="flex gap-5 text-sm text-ink-soft">
+              <Link href="/#pricing" className="hover:text-ink">Pricing</Link>
+              <Link href="/#faq" className="hover:text-ink">Questions</Link>
+            </nav>
+          </div>
+        </header>
+        <main>{children}</main>
+        <footer className="mt-20 border-t border-line">
+          <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-ink-soft sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p>
+              {APP_NAME}. Pay per fax, no subscription. Help: <span className="select-all font-mono">{SUPPORT_EMAIL}</span>
+            </p>
+            <div className="flex gap-5">
+              <Link href="/terms" className="hover:text-ink">Terms</Link>
+              <Link href="/privacy" className="hover:text-ink">Privacy</Link>
+            </div>
+          </div>
+        </footer>
+      </body>
+    </html>
+  );
+}
