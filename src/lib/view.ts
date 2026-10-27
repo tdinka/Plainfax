@@ -46,7 +46,7 @@ export function toView(f: Fax): FaxView {
 export function modes(): { paymentMode: FaxView["paymentMode"]; faxMode: FaxView["faxMode"] } {
   const paymentMode = !stripeEnabled()
     ? "simulated"
-    : (process.env.STRIPE_SECRET_KEY || "").startsWith("sk_live_")
+    : /^(sk|rk)_live_/.test(process.env.STRIPE_SECRET_KEY || "") // rk_ = restricted key
       ? "live"
       : "test";
   return { paymentMode, faxMode: faxProviderName() === "telnyx" ? "live" : "simulated" };
