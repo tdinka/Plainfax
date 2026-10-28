@@ -18,7 +18,7 @@ The name is set in one place: `src/lib/config.ts` (`APP_NAME`). Live at https://
 
 ## Run it on your computer (test mode, costs nothing)
 
-You need Node.js and a Postgres database. The easiest database is a new one on Railway, like Recipe Box.
+You need Node.js and a Postgres database. Use a practice database on your own computer, never the live one: `brew install postgresql@16`, `brew services start postgresql@16`, `/opt/homebrew/opt/postgresql@16/bin/createdb faxjustonce_dev`, then set `DATABASE_URL="postgresql://<your Mac username>@localhost:5432/faxjustonce_dev"`.
 
 1. Open Terminal in this folder and install the packages:
    ```bash

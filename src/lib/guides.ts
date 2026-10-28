@@ -211,6 +211,118 @@ export const GUIDES: Guide[] = [
     ],
     linkText: "One fax, no subscription",
   },
+  {
+    slug: "fax-from-computer",
+    metaTitle: `How to send a fax from your computer | ${APP_NAME}`,
+    description: `Send a fax from a Mac or Windows computer in your browser. Drag in a PDF, enter the fax number, and pay ${price} once. No software, no fax line, no subscription.`,
+    eyebrow: "Fax from a computer",
+    title: "Send a fax from your computer",
+    intro: `No fax software, modem or phone line needed. Drag your document into this page, enter the number, and send it for ${price}.`,
+    steps: [
+      "Drag a PDF onto the form, or click Choose files.",
+      "Enter the US or Canada fax number, and add a free cover page if you want one.",
+      "Preview exactly what will be sent, then pay once.",
+      "Watch it go through, then download a delivery confirmation.",
+    ],
+    sections: [
+      {
+        heading: "Turning a document into a PDF",
+        body: [
+          "On a Mac: choose File, then Print, then PDF, then Save as PDF.",
+          "On Windows: choose File, then Print, and pick Microsoft Print to PDF as the printer.",
+          "In Word or Google Docs: use File, then Download or Export, and pick PDF.",
+        ],
+      },
+      {
+        heading: "Paper only?",
+        body: [
+          "If the document is on paper and you don't have a scanner, open this page on your phone and photograph each page instead. Each photo becomes one fax page.",
+        ],
+      },
+    ],
+    faqs: [
+      ["Do I need to install anything?", "No. It works in Chrome, Safari, Edge or Firefox on any computer."],
+      deliveredFaq,
+      failedFaq,
+    ],
+    linkText: "Fax from a computer",
+  },
+  {
+    slug: "fax-to-doctors-office",
+    metaTitle: `How to fax a form to a doctor's office | ${APP_NAME}`,
+    description: `Need to fax a signed form to a doctor's office, pharmacy or insurer? Upload it or photograph it, enter their fax number, and pay ${price} once. No fax machine needed.`,
+    eyebrow: "Fax to a doctor's office",
+    title: "Fax a form to your doctor's office",
+    intro: `Doctors' offices, pharmacies and insurers still ask for forms by fax. Upload or photograph yours and send it for ${price}, with a delivery confirmation you can keep.`,
+    steps: [
+      "Fill in and sign the form, then upload it as a PDF or take a photo of each page.",
+      "Enter the office's fax number, and add a free cover page with your name and date of birth if they ask for one.",
+      `Pay ${price} once.`,
+      "Download the delivery confirmation in case the office says it never arrived.",
+    ],
+    sections: [
+      {
+        heading: "Forms people often fax",
+        body: [
+          "Records release and authorization forms.",
+          "New patient paperwork and consent forms.",
+          "Forms a pharmacy or insurance company asks you to return by fax.",
+        ],
+      },
+      {
+        heading: "Before you send",
+        body: [
+          "Check the fax number with the office. A wrong digit sends your form to someone else, and a delivered fax can't be refunded.",
+          "Use the cover page to say who the form is for and how to reach you.",
+          `${APP_NAME} is for people faxing their own forms. It isn't set up for healthcare offices that need a HIPAA business associate agreement.`,
+        ],
+      },
+    ],
+    faqs: [
+      [
+        "What happens to my form after it's sent?",
+        "It's deleted from our servers as soon as the fax is delivered or the attempt ends. The status page keeps only the fax number, page count and file names.",
+      ],
+      deliveredFaq,
+      failedFaq,
+    ],
+    linkText: "Fax to a doctor's office",
+  },
+  {
+    slug: "fax-a-photo",
+    metaTitle: `How to fax a photo or picture of a document | ${APP_NAME}`,
+    description: `Fax a photo of a document straight from your phone. Each photo becomes one fax page. JPG or PNG, US and Canada numbers, ${price} once, no subscription.`,
+    eyebrow: "Fax a photo",
+    title: "Fax a photo of a document",
+    intro: `No scanner? Photograph each page with your phone and we fax the photos as pages, for ${price}.`,
+    steps: [
+      "Tap Take a photo for each page, or Choose files to pick JPG or PNG photos you already took.",
+      "Enter the US or Canada fax number.",
+      "Preview the pages to check every one is readable, then pay once.",
+      "Watch it go through, then download a delivery confirmation.",
+    ],
+    sections: [
+      photoTips,
+      {
+        heading: "What faxed photos look like",
+        body: [
+          "Fax machines print in black and white at a fairly low resolution. Typed and handwritten pages come through fine; color photos of people or places come out grainy, so fax documents, not snapshots.",
+        ],
+      },
+      {
+        heading: "If an iPhone photo won't upload",
+        body: [
+          "Pick the photo from your Photos library and your iPhone turns it into a JPG for you. If you saved it to the Files app first, save it as a JPG and try again.",
+        ],
+      },
+    ],
+    faqs: [
+      ["Can I mix photos and PDFs?", "Yes. Add them in the order you want, and they're sent together as one fax."],
+      deliveredFaq,
+      failedFaq,
+    ],
+    linkText: "Fax a photo",
+  },
 ];
 
 export function getGuide(slug: string): Guide {

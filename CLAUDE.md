@@ -14,6 +14,7 @@ Pay-per-fax web app: upload → price → pay once → fax sent → delivery con
 ## Stack (same as Recipe Box)
 - Next.js 14 (App Router, TypeScript) + Tailwind CSS. Fonts are self-hosted npm packages (@fontsource), not Google Fonts links.
 - Postgres with Prisma 5. Use `prisma db push`, never `prisma migrate dev`.
+- Local development uses a practice database on the Mac (`faxjustonce_dev`, Homebrew `postgresql@16`, started with `brew services`). Never point the local `.env` at the production Railway database; its address is kept commented out in `.env`.
 - Stripe Checkout for payment (`src/lib/payments.ts`); simulated when `STRIPE_SECRET_KEY` is empty.
 - Fax line behind one interface (`src/lib/fax/`): `mock` (default, simulated) or `telnyx`.
 - Hosting: Railway.
