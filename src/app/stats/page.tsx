@@ -1,6 +1,6 @@
 // Owner-only numbers for the 90-day review: uploads, paid, delivered, refunded.
 // Password-protected by src/middleware.ts. Faxes sent on the simulated line
-// (testing before go-live) are left out.
+// (testing before go-live), and anything started before STATS_START, are left out.
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/config";
@@ -9,7 +9,11 @@ export const dynamic = "force-dynamic";
 export const metadata = { title: "Stats", robots: { index: false, follow: false } };
 
 const DAY = 24 * 60 * 60 * 1000;
-const realFaxes: Prisma.FaxWhereInput = { OR: [{ provider: null }, { provider: { not: "mock" } }] };
+// Counting starts at midnight Pacific time on Oct 28, 2026; earlier faxes were launch testing.
+const STATS_START = new Date("2026-10-28T00:00:00-07:00");
+const realFaxes: Prisma.FaxWhereInput = {
+  AND: [{ createdAt: { gte: STATS_START } }, { OR: [{ provider: null }, { provider: { not: "mock" } }] }],
+};
 // Faxes started from a Google ad link (?ref=gads), saved by /api/faxes.
 const fromAds: Prisma.FaxWhereInput = { events: { some: { type: "source", detail: "gads" } } };
 
@@ -38,7 +42,7 @@ export default async function Stats() {
   const periods = [
     { label: "Last 7 days", stats: await periodStats(new Date(now - 7 * DAY)) },
     { label: "Last 30 days", stats: await periodStats(new Date(now - 30 * DAY)) },
-    { label: "All time", stats: await periodStats(null) },
+    { label: "Since Oct 28", stats: await periodStats(null) },
   ];
   const recent = await prisma.fax.findMany({
     where: realFaxes,
@@ -68,7 +72,7 @@ export default async function Stats() {
       <p className="eyebrow">Private</p>
       <h1 className="mt-2 font-display text-3xl font-bold">Stats</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        Counted by the day each fax was started. Visitor numbers are in Cloudflare Web Analytics, and Google searches are in Search Console.
+        Counted by the day each fax was started, from October 28, 2026 on. Visitor numbers are in Cloudflare Web Analytics, and Google searches are in Search Console.
       </p>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-line bg-white">
