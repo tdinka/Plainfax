@@ -1,4 +1,4 @@
-# Plainfax — notes for Claude Code
+# Fax Just Once — notes for Claude Code
 
 Pay-per-fax web app: upload → price → pay once → fax sent → delivery confirmation, with automatic refund on failure. Launch plan (scope, pricing, 90-day keep-or-stop rule): https://claude.ai/artifact/Fi5USTthvLab77g5fZg88q
 
@@ -9,7 +9,7 @@ Pay-per-fax web app: upload → price → pay once → fax sent → delivery con
 - Prices live in `src/lib/config.ts` (`PRICE_TIERS`); the cover page is free and not counted.
 - The uploaded document is deleted (pdf set to null) as soon as a fax is delivered or finally fails. Keep it that way.
 - Unpaid uploads lose their document within 24 hours (`purgeAbandonedDrafts`, run hourly from `src/instrumentation-node.ts`); paying after that refunds automatically. The Privacy page promises this.
-- Working name "Plainfax", set only in `APP_NAME`.
+- Name "Fax Just Once" (domain faxjustonce.com, bought at Cloudflare Oct 2026), set only in `APP_NAME`. Repo, folder and Railway service keep the old "plainfax" name. Don't change the "plainfax" fallback salt in `src/lib/tokens.ts`.
 
 ## Stack (same as Recipe Box)
 - Next.js 14 (App Router, TypeScript) + Tailwind CSS. Fonts are self-hosted npm packages (@fontsource), not Google Fonts links.

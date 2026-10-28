@@ -1,4 +1,4 @@
-// Plainfax — data model.
+// Fax Just Once — data model.
 // One row per fax. The document itself (pdf) is deleted as soon as the fax
 // is delivered or finally fails, so we never keep people's paperwork.
 

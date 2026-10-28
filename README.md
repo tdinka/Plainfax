@@ -1,8 +1,8 @@
-# Plainfax
+# Fax Just Once
 
 Send a fax online for $2.99, no subscription. Upload a PDF or photos, enter a US or Canada fax number, pay once, and watch it get delivered. If the fax can't be delivered, the payment is refunded automatically.
 
-Plainfax is a working name. Change it in one place: `src/lib/config.ts` (`APP_NAME`).
+The name is set in one place: `src/lib/config.ts` (`APP_NAME`). Live at https://faxjustonce.com. (The repo, folder and Railway service are still called "plainfax"; that's fine.)
 
 ## What's built
 

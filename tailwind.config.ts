@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Plainfax look: cool office paper, dark ink, one green for "send" actions.
+// Fax Just Once look: cool office paper, dark ink, one green for "send" actions.
 // Green (signal) is only for actions and success; red (alert) only for problems.
 const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],

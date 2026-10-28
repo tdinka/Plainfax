@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import "@fontsource-variable/archivo";
 import "@fontsource-variable/public-sans";
 import "@fontsource/ibm-plex-mono/400.css";
@@ -54,6 +55,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           </div>
         </footer>
+        {/* Cloudflare Web Analytics: cookieless page-view counts (mentioned on the Privacy page) */}
+        <Script
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon='{"token": "4200057a0bdf4025992003787d48ca7a"}'
+          strategy="afterInteractive"
+        />
       </body>
     </html>
   );

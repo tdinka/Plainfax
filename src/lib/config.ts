@@ -1,6 +1,6 @@
 // One place for the app's name and prices, so renaming or repricing is a one-line change.
 
-export const APP_NAME = "Plainfax";
+export const APP_NAME = "Fax Just Once";
 export const SUPPORT_EMAIL = "plainfax.help@gmail.com";
 
 export const MAX_DOC_PAGES = 50;
