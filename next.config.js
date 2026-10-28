@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // lint runs separately (npm run lint); skipping it here shortens deploy builds
+  eslint: { ignoreDuringBuilds: true },
   experimental: {
     // pdf-lib and stripe run on the server only
     serverComponentsExternalPackages: ["pdf-lib"],
