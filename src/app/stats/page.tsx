@@ -10,12 +10,15 @@ export const metadata = { title: "Stats", robots: { index: false, follow: false 
 
 const DAY = 24 * 60 * 60 * 1000;
 const realFaxes: Prisma.FaxWhereInput = { OR: [{ provider: null }, { provider: { not: "mock" } }] };
+// Faxes started from a Google ad link (?ref=gads), saved by /api/faxes.
+const fromAds: Prisma.FaxWhereInput = { events: { some: { type: "source", detail: "gads" } } };
 
 async function periodStats(since: Date | null) {
   const base: Prisma.FaxWhereInput = since ? { AND: [realFaxes, { createdAt: { gte: since } }] } : realFaxes;
-  const [uploads, paid, delivered, failed, refunded, paidSum, refundedSum] = await Promise.all([
+  const [uploads, paid, paidFromAds, delivered, failed, refunded, paidSum, refundedSum] = await Promise.all([
     prisma.fax.count({ where: base }),
     prisma.fax.count({ where: { AND: [base, { paidAt: { not: null } }] } }),
+    prisma.fax.count({ where: { AND: [base, fromAds, { paidAt: { not: null } }] } }),
     prisma.fax.count({ where: { AND: [base, { status: "DELIVERED" }] } }),
     prisma.fax.count({ where: { AND: [base, { status: "FAILED" }] } }),
     prisma.fax.count({ where: { AND: [base, { refundedAt: { not: null } }] } }),
@@ -23,7 +26,7 @@ async function periodStats(since: Date | null) {
     prisma.fax.aggregate({ where: { AND: [base, { refundedAt: { not: null } }] }, _sum: { priceCents: true } }),
   ]);
   const kept = (paidSum._sum.priceCents ?? 0) - (refundedSum._sum.priceCents ?? 0);
-  return { uploads, paid, delivered, failed, refunded, kept };
+  return { uploads, paid, paidFromAds, delivered, failed, refunded, kept };
 }
 
 function pct(part: number, whole: number): string {
@@ -41,13 +44,17 @@ export default async function Stats() {
     where: realFaxes,
     orderBy: { createdAt: "desc" },
     take: 25,
-    select: { createdAt: true, status: true, toNumber: true, totalPages: true, priceCents: true, paidAt: true, refundedAt: true, attempts: true },
+    select: {
+      createdAt: true, status: true, toNumber: true, totalPages: true, priceCents: true, paidAt: true, refundedAt: true, attempts: true,
+      events: { where: { type: "source" }, select: { detail: true } },
+    },
   });
 
   const rows: [string, (s: (typeof periods)[number]["stats"]) => string, string?][] = [
     ["Uploads", (s) => String(s.uploads), "Started a fax (uploaded a document)"],
     ["Paid", (s) => String(s.paid)],
     ["Upload to paid", (s) => pct(s.paid, s.uploads), "Plan's early target: 30% or more"],
+    ["Paid from ads", (s) => String(s.paidFromAds), "Came from a Google ad link (?ref=gads)"],
     ["Delivered", (s) => String(s.delivered)],
     ["Failed", (s) => String(s.failed)],
     ["Delivery rate", (s) => pct(s.delivered, s.delivered + s.failed), "Target: 95% or more"],
@@ -121,7 +128,9 @@ export default async function Stats() {
                   <td className="px-4 py-2 text-right font-mono">{f.totalPages}</td>
                   <td className="px-4 py-2 text-right font-mono">{formatPrice(f.priceCents)}</td>
                   <td className="px-4 py-2 text-xs text-ink-soft">
-                    {[f.refundedAt && "refunded", f.attempts > 1 && `${f.attempts} attempts`].filter(Boolean).join(", ")}
+                    {[f.events[0] && `from ${f.events[0].detail}`, f.refundedAt && "refunded", f.attempts > 1 && `${f.attempts} attempts`]
+                      .filter(Boolean)
+                      .join(", ")}
                   </td>
                 </tr>
               ))}

@@ -37,6 +37,10 @@ export async function POST(req: Request) {
   const email = String(form.get("email") || "").trim();
   if (email && !z.string().email().safeParse(email).success) return fail("That email address doesn't look right.");
 
+  // Where the visitor came from, e.g. "gads" for a Google ad. Anything odd is ignored.
+  const ref = String(form.get("ref") || "");
+  const source = /^[a-z0-9_-]{1,20}$/.test(ref) ? ref : null;
+
   const wantsCover = form.get("cover") === "1";
   let cover: z.infer<typeof coverSchema> = {};
   if (wantsCover) {
@@ -85,7 +89,12 @@ export async function POST(req: Request) {
         ipHash,
       },
     });
-    await prisma.faxEvent.create({ data: { faxId: fax.id, type: "created", detail: `${totalPages} pages` } });
+    await prisma.faxEvent.createMany({
+      data: [
+        { faxId: fax.id, type: "created", detail: `${totalPages} pages` },
+        ...(source ? [{ faxId: fax.id, type: "source", detail: source }] : []),
+      ],
+    });
     return NextResponse.json({ token: fax.token });
   } catch (err) {
     if (err instanceof UserFacingError) return fail(err.message);

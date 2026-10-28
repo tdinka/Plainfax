@@ -58,6 +58,9 @@ export default function SendForm() {
     files.forEach((f) => form.append("files", f.file));
     form.append("to", to);
     form.append("email", email);
+    // Ads link with ?ref=gads; saved with the fax so the stats page can count ad sales.
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref) form.append("ref", ref);
     if (cover) {
       form.append("cover", "1");
       form.append("coverDetails", JSON.stringify(coverDetails));
