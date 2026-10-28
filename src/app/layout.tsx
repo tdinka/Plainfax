@@ -7,6 +7,7 @@ import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import "./globals.css";
 import { APP_NAME, SUPPORT_EMAIL } from "@/lib/config";
+import { GUIDES } from "@/lib/guides";
 
 export const metadata: Metadata = {
   title: `${APP_NAME}: Send a fax online for $2.99, no subscription`,
@@ -45,6 +46,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </header>
         <main>{children}</main>
         <footer className="mt-20 border-t border-line">
+          <nav aria-label="Ways to fax" className="mx-auto flex max-w-6xl flex-wrap gap-x-5 gap-y-2 px-4 pt-8 text-sm text-ink-soft sm:px-6">
+            {GUIDES.map((g) => (
+              <Link key={g.slug} href={`/${g.slug}`} className="hover:text-ink">
+                {g.linkText}
+              </Link>
+            ))}
+          </nav>
           <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-8 text-sm text-ink-soft sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p>
               {APP_NAME}. Pay per fax, no subscription. Help: <span className="select-all font-mono">{SUPPORT_EMAIL}</span>
