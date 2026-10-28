@@ -2,7 +2,7 @@
 // returns a Stripe Checkout link; without them it simulates payment.
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { stripeEnabled } from "@/lib/config";
+import { faxProviderName, stripeEnabled } from "@/lib/config";
 import { markPaidAndSend } from "@/lib/lifecycle";
 import { createCheckout } from "@/lib/payments";
 
@@ -18,6 +18,10 @@ export async function POST(_req: Request, { params }: { params: { token: string 
   }
 
   if (!stripeEnabled()) {
+    // Simulated payment is only for trying the app. Never send real faxes for free.
+    if (faxProviderName() === "telnyx" || (process.env.NODE_ENV === "production" && process.env.ALLOW_SIMULATED_PAYMENTS !== "1")) {
+      return NextResponse.json({ error: "Payments aren't set up yet." }, { status: 503 });
+    }
     await markPaidAndSend(fax.token, {});
     return NextResponse.json({ url: `/f/${fax.token}`, simulated: true });
   }
