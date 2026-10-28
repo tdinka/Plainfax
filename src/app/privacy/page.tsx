@@ -18,7 +18,7 @@ export default function Privacy() {
       <p>Card payments are handled by Stripe. We never see or store your card number. Stripe keeps its own record of the payment under its <a href="https://stripe.com/privacy" className="underline">privacy policy</a>.</p>
       <p>If you give your email, we pass it to Stripe so it can send your receipt. We don't use it for anything else.</p>
       <h2>Fax delivery</h2>
-      <p>Faxes are sent through Telnyx, our fax carrier. Telnyx receives your document and the fax number only to transmit it, under its <a href="https://telnyx.com/privacy-policy" className="underline">privacy policy</a>.</p>
+      <p>Faxes are sent through Telnyx, our fax carrier. Telnyx receives your document and the fax number only to transmit it. We don't ask Telnyx to store a copy of your document, and the private link it uses to fetch the document stops working once the fax finishes. Telnyx keeps its own record of the fax call, such as the numbers and the result, under its <a href="https://telnyx.com/privacy-policy" className="underline">privacy policy</a>.</p>
       <h2>Hosting</h2>
       <p>The site and its database run on Railway, which stores the records above, and your document until it's deleted, under its <a href="https://railway.com/legal/privacy" className="underline">privacy policy</a>.</p>
       <h2>Support email</h2>

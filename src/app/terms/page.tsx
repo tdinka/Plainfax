@@ -22,7 +22,7 @@ export default function Terms() {
       <h2>Limit on our responsibility</h2>
       <p>To the fullest extent allowed by law, our total responsibility for any claim related to a fax is limited to the amount you paid for that fax. We aren't responsible for indirect or consequential losses, such as missed deadlines, lost opportunities, or decisions made because a fax was or wasn't received.</p>
       <h2>Acceptable use</h2>
-      <p>Don't use {APP_NAME} to send unsolicited advertising, harassment, or anything illegal. We may refuse or stop faxes that break these rules.</p>
+      <p>Don't use {APP_NAME} to send unsolicited advertising, harassment, or anything illegal. We may refuse or stop faxes that break these rules. If we stop a fax you've paid for, we refund the full amount.</p>
       <p>You're responsible for what you send, and for having the right to send it to that number.</p>
       <h2>Your documents</h2>
       <p>You keep all rights to what you send. We store your document only as long as needed to deliver it.</p>
