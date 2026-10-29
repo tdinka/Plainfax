@@ -3,9 +3,11 @@
 // the Cloudflare settings are missing or the request fails, so the page still works.
 
 const API = "https://api.cloudflare.com/client/v4/graphql";
-// Cloudflare limits how long a range one query can cover, so longer ranges are
-// asked for in pieces and added up.
-const CHUNK = 30 * 24 * 60 * 60 * 1000;
+// Over about a week, Cloudflare answers with a sampled estimate (rounded to tens)
+// instead of an exact count, so longer ranges are asked for in 7-day pieces and
+// added up. A piece that still comes back sampled is split in half and asked again.
+const DAY = 24 * 60 * 60 * 1000;
+const CHUNK = 7 * DAY;
 
 export type Visits = { visits: number; pageViews: number };
 
@@ -15,6 +17,7 @@ const QUERY = `query ($account: string!, $filter: AccountRumPageloadEventsAdapti
       rumPageloadEventsAdaptiveGroups(limit: 1, filter: $filter) {
         count
         sum { visits }
+        avg { sampleInterval }
       }
     }
   }
@@ -36,6 +39,11 @@ async function queryRange(from: Date, to: Date): Promise<Visits> {
   const json = await res.json();
   if (!res.ok || json.errors?.length) throw new Error(JSON.stringify(json.errors ?? res.status));
   const group = json.data?.viewer?.accounts?.[0]?.rumPageloadEventsAdaptiveGroups?.[0];
+  if ((group?.avg?.sampleInterval ?? 1) > 1 && to.getTime() - from.getTime() > DAY) {
+    const mid = new Date((from.getTime() + to.getTime()) / 2);
+    const [a, b] = await Promise.all([queryRange(from, mid), queryRange(mid, to)]);
+    return { visits: a.visits + b.visits, pageViews: a.pageViews + b.pageViews };
+  }
   return { visits: group?.sum?.visits ?? 0, pageViews: group?.count ?? 0 };
 }
 

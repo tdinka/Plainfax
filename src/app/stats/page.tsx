@@ -21,7 +21,7 @@ const fromAds: Prisma.FaxWhereInput = { events: { some: { type: "source", detail
 async function periodStats(since: Date | null) {
   const base: Prisma.FaxWhereInput = since ? { AND: [realFaxes, { createdAt: { gte: since } }] } : realFaxes;
   const [visits, uploads, paid, paidFromAds, delivered, failed, refunded, paidSum, refundedSum] = await Promise.all([
-    visitsBetween(since ?? STATS_START, new Date()),
+    visitsBetween(since && since > STATS_START ? since : STATS_START, new Date()),
     prisma.fax.count({ where: base }),
     prisma.fax.count({ where: { AND: [base, { paidAt: { not: null } }] } }),
     prisma.fax.count({ where: { AND: [base, fromAds, { paidAt: { not: null } }] } }),
