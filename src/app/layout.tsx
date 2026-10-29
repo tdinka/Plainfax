@@ -38,17 +38,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <header className="border-b border-line bg-paper-50/80 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
             <Wordmark />
-            <nav className="flex gap-5 text-sm text-ink-soft">
-              <Link href="/#pricing" className="hover:text-ink">Pricing</Link>
-              <Link href="/#faq" className="hover:text-ink">Questions</Link>
+            <nav className="-my-2 flex gap-3 text-sm text-ink-soft sm:gap-5">
+              <Link href="/#pricing" className="inline-flex min-h-11 items-center px-1 hover:text-ink">Pricing</Link>
+              <Link href="/#faq" className="inline-flex min-h-11 items-center px-1 hover:text-ink">Questions</Link>
             </nav>
           </div>
         </header>
         <main>{children}</main>
         <footer className="mt-20 border-t border-line">
-          <nav aria-label="Ways to fax" className="mx-auto flex max-w-6xl flex-wrap gap-x-5 gap-y-2 px-4 pt-8 text-sm text-ink-soft sm:px-6">
+          <nav aria-label="Ways to fax" className="mx-auto flex max-w-6xl flex-wrap gap-x-5 px-4 pt-6 text-sm text-ink-soft sm:px-6">
             {GUIDES.map((g) => (
-              <Link key={g.slug} href={`/${g.slug}`} className="hover:text-ink">
+              <Link key={g.slug} href={`/${g.slug}`} className="inline-flex min-h-11 items-center hover:text-ink">
                 {g.linkText}
               </Link>
             ))}
@@ -57,9 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <p>
               {APP_NAME}. Pay per fax, no subscription. Help: <span className="select-all font-mono">{SUPPORT_EMAIL}</span>
             </p>
-            <div className="flex gap-5">
-              <Link href="/terms" className="hover:text-ink">Terms</Link>
-              <Link href="/privacy" className="hover:text-ink">Privacy</Link>
+            <div className="-my-3 flex gap-5">
+              <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-ink">Terms</Link>
+              <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-ink">Privacy</Link>
             </div>
           </div>
         </footer>

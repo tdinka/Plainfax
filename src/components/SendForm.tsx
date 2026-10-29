@@ -3,7 +3,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-type Picked = { id: string; file: File };
+// thumb: a preview of a photo, so people can check it before sending (PDFs have none).
+type Picked = { id: string; file: File; thumb?: string };
 
 function formatAsTyped(raw: string): string {
   let d = raw.replace(/\D/g, "");
@@ -38,11 +39,20 @@ export default function SendForm() {
 
   const add = (list: FileList | null) => {
     if (!list) return;
-    const next = Array.from(list).map((file) => ({ id: `${file.name}-${file.size}-${Math.random()}`, file }));
+    const next = Array.from(list).map((file) => ({
+      id: `${file.name}-${file.size}-${Math.random()}`,
+      file,
+      thumb: file.type.startsWith("image/") ? URL.createObjectURL(file) : undefined,
+    }));
     setFiles((cur) => [...cur, ...next].slice(0, 20));
     setError(null);
   };
-  const remove = (id: string) => setFiles((cur) => cur.filter((f) => f.id !== id));
+  const remove = (id: string) =>
+    setFiles((cur) => {
+      const gone = cur.find((f) => f.id === id);
+      if (gone?.thumb) URL.revokeObjectURL(gone.thumb);
+      return cur.filter((f) => f.id !== id);
+    });
   const moveUp = (i: number) =>
     setFiles((cur) => {
       if (i === 0) return cur;
@@ -113,13 +123,15 @@ export default function SendForm() {
             dragging ? "border-signal bg-signal-50" : "border-line bg-paper-50"
           }`}
         >
-          <p className="text-sm text-ink-soft">Drop a PDF or photos here, or</p>
+          <p className="hidden text-sm text-ink-soft sm:block">Drop a PDF or photos here, or</p>
+          <p className="text-sm font-medium sm:hidden">Add your document</p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
             <button type="button" className="btn-quiet" onClick={() => fileInput.current?.click()}>
               Choose files
             </button>
+            {/* Phones: one photo per page, so after the first it asks for the next one. */}
             <button type="button" className="btn-quiet sm:hidden" onClick={() => cameraInput.current?.click()}>
-              Take a photo
+              {files.length ? "Add next page" : "Take a photo"}
             </button>
           </div>
           <p className="mt-3 text-xs text-ink-faint">PDF, JPG or PNG · up to 50 pages · 20 MB total</p>
@@ -150,23 +162,46 @@ export default function SendForm() {
         </div>
 
         {files.length > 0 && (
-          <ol className="mt-3 divide-y divide-line rounded-lg border border-line">
-            {files.map((f, i) => (
-              <li key={f.id} className="flex items-center gap-3 px-3 py-2 text-sm">
-                <span className="w-5 font-mono text-xs text-ink-faint">{i + 1}</span>
-                <span className="min-w-0 flex-1 truncate">{f.file.name}</span>
-                <span className="font-mono text-xs text-ink-faint">{size(f.file.size)}</span>
-                {i > 0 && (
-                  <button type="button" onClick={() => moveUp(i)} className="text-xs text-ink-soft hover:text-ink" aria-label={`Move ${f.file.name} up`}>
-                    ↑
+          <>
+            <ol className="mt-3 divide-y divide-line rounded-lg border border-line">
+              {files.map((f, i) => (
+                <li key={f.id} className="flex items-center gap-2 py-1.5 pl-2 pr-1 text-sm">
+                  <span className="w-4 text-center font-mono text-xs text-ink-faint">{i + 1}</span>
+                  {f.thumb ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- a local preview, not a hosted image
+                    <img src={f.thumb} alt="" className="h-12 w-10 flex-none rounded border border-line bg-white object-cover" />
+                  ) : (
+                    <span aria-hidden className="flex h-12 w-10 flex-none items-center justify-center rounded border border-line bg-paper-50 font-mono text-[10px] text-ink-faint">
+                      PDF
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate">{f.file.name}</span>
+                    <span className="block font-mono text-xs text-ink-faint">{size(f.file.size)}</span>
+                  </span>
+                  {i > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => moveUp(i)}
+                      className="flex h-11 w-11 flex-none items-center justify-center rounded-md text-base text-ink-soft hover:bg-paper-50 hover:text-ink"
+                      aria-label={`Move ${f.file.name} up`}
+                    >
+                      ↑
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => remove(f.id)}
+                    className="flex h-11 flex-none items-center rounded-md px-2 text-xs text-alert hover:bg-alert-50"
+                    aria-label={`Remove ${f.file.name}`}
+                  >
+                    Remove
                   </button>
-                )}
-                <button type="button" onClick={() => remove(f.id)} className="text-xs text-alert hover:underline" aria-label={`Remove ${f.file.name}`}>
-                  Remove
-                </button>
-              </li>
-            ))}
-          </ol>
+                </li>
+              ))}
+            </ol>
+            {files.length > 1 && <p className="mt-1 text-xs text-ink-faint">Faxed in this order. Use ↑ to move a page up.</p>}
+          </>
         )}
       </div>
 
@@ -239,9 +274,10 @@ export default function SendForm() {
       {/* 4. Email */}
       <div className="mt-5">
         <label htmlFor="email" className="label">
-          Email for your receipt <span className="font-normal text-ink-faint">(optional)</span>
+          Email for updates <span className="font-normal text-ink-faint">(optional)</span>
         </label>
         <input id="email" type="email" autoComplete="email" className="field" placeholder="you@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <p className="mt-1 text-xs text-ink-faint">We'll email your status link, your receipt, and the delivery confirmation. Nothing else.</p>
       </div>
 
       {error && (

@@ -200,7 +200,7 @@ export const GUIDES: Guide[] = [
       {
         heading: "What's included in every fax",
         body: [
-          "A free cover page, an automatic redial if the line is busy, a delivery confirmation PDF, and an automatic refund if the fax can't be delivered.",
+          "A free cover page, an automatic redial if the line is busy, a delivery confirmation PDF, and an automatic refund if the fax can't be delivered. No ads or branding are added to your fax.",
         ],
       },
     ],

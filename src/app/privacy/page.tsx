@@ -17,7 +17,10 @@ export default function Privacy() {
       <p>If you upload a document but don't pay, it's deleted within 24 hours.</p>
       <h2>Payments</h2>
       <p>Card payments are handled by Stripe. We never see or store your card number. Stripe keeps its own record of the payment under its <a href="https://stripe.com/privacy" className="underline">privacy policy</a>.</p>
-      <p>If you give your email, we pass it to Stripe so it can send your receipt. We don't use it for anything else.</p>
+      <p>If you give your email, we pass it to Stripe so it can send your receipt.</p>
+      <h2>Emails about your fax</h2>
+      <p>If you give your email, we also send you up to two emails about that fax: your status link once you've paid, then either the delivery confirmation or a note that it couldn't be delivered and was refunded. We don't use your email for anything else, and we never send marketing.</p>
+      <p>These emails are sent through Resend, our email provider, under its <a href="https://resend.com/legal/privacy-policy" className="underline">privacy policy</a>.</p>
       <h2>Fax delivery</h2>
       <p>Faxes are sent through Telnyx, our fax carrier. Telnyx receives your document and the fax number only to transmit it. We don't ask Telnyx to store a copy of your document, and the private link it uses to fetch the document stops working once the fax finishes. Telnyx keeps its own record of the fax call, such as the numbers and the result, under its <a href="https://telnyx.com/privacy-policy" className="underline">privacy policy</a>.</p>
       <h2>Hosting</h2>

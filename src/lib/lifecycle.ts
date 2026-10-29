@@ -8,6 +8,7 @@ import { getProvider } from "./fax";
 import { mockOutcome } from "./fax/mock";
 import { RETRYABLE_REASONS } from "./fax/types";
 import { refundPayment } from "./payments";
+import { emailDelivered, emailFailed, emailSending } from "./email";
 
 const RETRY_DELAY_MS = faxProviderName() === "mock" ? 3000 : 2 * 60 * 1000; // wait before redialing a busy line
 
@@ -34,8 +35,10 @@ export async function markPaidAndSend(token: string, payment: { sessionId?: stri
     await prisma.fax.update({ where: { id: fax.id }, data: { status: "FAILED", failedAt: new Date(), failureReason: "expired" } });
     await logEvent(fax.id, "failed", "expired");
     await refund(fax.id);
+    await emailFailed(await prisma.fax.findUniqueOrThrow({ where: { id: fax.id } }));
     return;
   }
+  await emailSending(fax);
   await dispatch(fax.id);
 }
 
@@ -90,7 +93,10 @@ export async function applyProviderResult(
       where: { id: fax.id, status: "SENDING", providerFaxId },
       data: { status: "DELIVERED", deliveredAt: new Date(), pdf: null, failureReason: null },
     });
-    if (done.count) await logEvent(fax.id, "delivered", result.pageCount ? `${result.pageCount} pages` : undefined);
+    if (done.count) {
+      await logEvent(fax.id, "delivered", result.pageCount ? `${result.pageCount} pages` : undefined);
+      await emailDelivered(await prisma.fax.findUniqueOrThrow({ where: { id: fax.id } }));
+    }
     return;
   }
   await logEvent(fax.id, "attempt_failed", result.reason);
@@ -120,6 +126,7 @@ async function handleFailure(faxId: string, reason: string) {
   if (failed.count) {
     await logEvent(faxId, "failed", reason);
     await refund(faxId);
+    await emailFailed(await prisma.fax.findUniqueOrThrow({ where: { id: faxId } }));
   }
 }
 
