@@ -1,6 +1,6 @@
 // Builds the one PDF that gets faxed: optional cover page + every uploaded file.
 // Also makes the delivery confirmation PDF people can download afterwards.
-import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import { PDFDocument, StandardFonts, degrees, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import type { FormErrorKind } from "@/lib/formErrors";
 
 const LETTER: [number, number] = [612, 792]; // 8.5 x 11 in, in points
@@ -57,6 +57,43 @@ function looksLike(bytes: Uint8Array, k: "pdf" | "jpg" | "png"): boolean {
   return bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47; // .PNG
 }
 
+/**
+ * Phone cameras save photos the way the sensor captured them, plus an EXIF
+ * "orientation" tag saying how to turn them for viewing. Browsers follow the
+ * tag (so the form's thumbnail looks right), but the PDF doesn't, so we read it
+ * and turn the photo ourselves. Returns how far to turn it clockwise.
+ * Mirrored orientations (2, 4, 5, 7), which cameras don't produce, are treated
+ * as their nearest plain rotation.
+ */
+export function jpegRotation(bytes: Uint8Array): 0 | 90 | 180 | 270 {
+  const u16 = (i: number, le: boolean) => (le ? bytes[i] | (bytes[i + 1] << 8) : (bytes[i] << 8) | bytes[i + 1]);
+  const u32 = (i: number, le: boolean) => (le ? u16(i, true) + u16(i + 2, true) * 0x10000 : u16(i, false) * 0x10000 + u16(i + 2, false));
+  let i = 2; // after the FFD8 start marker
+  while (i + 4 <= bytes.length && bytes[i] === 0xff) {
+    const marker = bytes[i + 1];
+    if (marker === 0xda || marker === 0xd9) break; // image data starts; no EXIF before it
+    const len = u16(i + 2, false);
+    // APP1 segment that starts with "Exif\0\0", followed by a TIFF header.
+    if (marker === 0xe1 && bytes[i + 4] === 0x45 && bytes[i + 5] === 0x78 && bytes[i + 6] === 0x69 && bytes[i + 7] === 0x66) {
+      const tiff = i + 10;
+      const le = bytes[tiff] === 0x49; // "II" = little-endian, "MM" = big-endian
+      const ifd = tiff + u32(tiff + 4, le);
+      const count = ifd + 2 <= bytes.length ? u16(ifd, le) : 0;
+      for (let e = 0; e < count; e++) {
+        const entry = ifd + 2 + e * 12;
+        if (entry + 12 > bytes.length) break;
+        if (u16(entry, le) === 0x0112) {
+          const o = u16(entry + 8, le);
+          return o === 3 || o === 4 ? 180 : o === 6 || o === 7 ? 90 : o === 8 || o === 5 ? 270 : 0;
+        }
+      }
+      return 0;
+    }
+    i += 2 + len;
+  }
+  return 0;
+}
+
 export async function buildDocument(files: UploadedFile[]): Promise<{ doc: PDFDocument; pageCount: number }> {
   if (!files.length) throw new UserFacingError("Add at least one file to fax.", "no_file");
   const out = await PDFDocument.create();
@@ -91,15 +128,26 @@ export async function buildDocument(files: UploadedFile[]): Promise<{ doc: PDFDo
       pages.forEach((p) => out.addPage(p));
     } else {
       const img = k === "jpg" ? await out.embedJpg(file.bytes) : await out.embedPng(file.bytes);
+      const turn = k === "jpg" ? jpegRotation(file.bytes) : 0;
+      // Size as it will look once turned upright.
+      const [uw, uh] = turn === 90 || turn === 270 ? [img.height, img.width] : [img.width, img.height];
       const page = out.addPage(LETTER);
       // Wide photos go on a landscape page so they print bigger.
-      if (img.width > img.height) page.setSize(LETTER[1], LETTER[0]);
+      if (uw > uh) page.setSize(LETTER[1], LETTER[0]);
       const { width: pw, height: ph } = page.getSize();
       // Fit inside the margins, scaling small images up and large ones down.
-      const scale = Math.min((pw - MARGIN * 2) / img.width, (ph - MARGIN * 2) / img.height);
+      const scale = Math.min((pw - MARGIN * 2) / uw, (ph - MARGIN * 2) / uh);
       const w = img.width * scale;
       const h = img.height * scale;
-      page.drawImage(img, { x: (pw - w) / 2, y: (ph - h) / 2, width: w, height: h });
+      // Bottom-left corner of the upright photo, centered on the page.
+      const bx = (pw - uw * scale) / 2;
+      const by = (ph - uh * scale) / 2;
+      // pdf-lib turns counter-clockwise around the point it draws from, so that
+      // point moves to whichever corner ends up at the bottom-left.
+      if (turn === 90) page.drawImage(img, { x: bx, y: by + w, width: w, height: h, rotate: degrees(-90) });
+      else if (turn === 180) page.drawImage(img, { x: bx + w, y: by + h, width: w, height: h, rotate: degrees(180) });
+      else if (turn === 270) page.drawImage(img, { x: bx + h, y: by, width: w, height: h, rotate: degrees(90) });
+      else page.drawImage(img, { x: bx, y: by, width: w, height: h });
     }
   }
 
