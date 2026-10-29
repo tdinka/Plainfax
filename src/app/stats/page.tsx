@@ -4,6 +4,7 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/config";
+import { visitsBetween } from "@/lib/visitors";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Stats", robots: { index: false, follow: false } };
@@ -19,7 +20,8 @@ const fromAds: Prisma.FaxWhereInput = { events: { some: { type: "source", detail
 
 async function periodStats(since: Date | null) {
   const base: Prisma.FaxWhereInput = since ? { AND: [realFaxes, { createdAt: { gte: since } }] } : realFaxes;
-  const [uploads, paid, paidFromAds, delivered, failed, refunded, paidSum, refundedSum] = await Promise.all([
+  const [visits, uploads, paid, paidFromAds, delivered, failed, refunded, paidSum, refundedSum] = await Promise.all([
+    visitsBetween(since ?? STATS_START, new Date()),
     prisma.fax.count({ where: base }),
     prisma.fax.count({ where: { AND: [base, { paidAt: { not: null } }] } }),
     prisma.fax.count({ where: { AND: [base, fromAds, { paidAt: { not: null } }] } }),
@@ -30,7 +32,7 @@ async function periodStats(since: Date | null) {
     prisma.fax.aggregate({ where: { AND: [base, { refundedAt: { not: null } }] }, _sum: { priceCents: true } }),
   ]);
   const kept = (paidSum._sum.priceCents ?? 0) - (refundedSum._sum.priceCents ?? 0);
-  return { uploads, paid, paidFromAds, delivered, failed, refunded, kept };
+  return { visits, uploads, paid, paidFromAds, delivered, failed, refunded, kept };
 }
 
 function pct(part: number, whole: number): string {
@@ -55,7 +57,10 @@ export default async function Stats() {
   });
 
   const rows: [string, (s: (typeof periods)[number]["stats"]) => string, string?][] = [
+    ["Visits", (s) => (s.visits ? String(s.visits.visits) : "–"), "From Cloudflare Web Analytics; one visit can view several pages"],
+    ["Page views", (s) => (s.visits ? String(s.visits.pageViews) : "–")],
     ["Uploads", (s) => String(s.uploads), "Started a fax (uploaded a document)"],
+    ["Visit to upload", (s) => (s.visits ? pct(s.uploads, s.visits.visits) : "–"), "Share of visits that started a fax"],
     ["Paid", (s) => String(s.paid)],
     ["Upload to paid", (s) => pct(s.paid, s.uploads), "Plan's early target: 30% or more"],
     ["Paid from ads", (s) => String(s.paidFromAds), "Came from a Google ad link (?ref=gads)"],
@@ -72,7 +77,7 @@ export default async function Stats() {
       <p className="eyebrow">Private</p>
       <h1 className="mt-2 font-display text-3xl font-bold">Stats</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        Counted by the day each fax was started, from October 28, 2026 on. Visitor numbers are in Cloudflare Web Analytics, and Google searches are in Search Console.
+        Counted by the day each fax was started, from October 28, 2026 on. Visits come from Cloudflare Web Analytics (your own visits count too); Google searches are in Search Console.
       </p>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-line bg-white">
