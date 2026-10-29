@@ -14,6 +14,11 @@ function formatAsTyped(raw: string): string {
   return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
 }
 
+// Counts an error the form caught before uploading (kind only), for the stats page.
+function report(kind: "no_file" | "number_incomplete" | "network") {
+  fetch("/api/form-errors", { method: "POST", body: JSON.stringify({ kind }), keepalive: true }).catch(() => {});
+}
+
 function size(bytes: number): string {
   return bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
 }
@@ -50,8 +55,14 @@ export default function SendForm() {
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!files.length) return setError("Add the document you want to fax.");
-    if (digits.length !== 10) return setError("Enter the 10-digit fax number you're sending to.");
+    if (!files.length) {
+      report("no_file");
+      return setError("Add the document you want to fax.");
+    }
+    if (digits.length !== 10) {
+      report("number_incomplete");
+      return setError("Enter the 10-digit fax number you're sending to.");
+    }
     setBusy(true);
     setError(null);
     const form = new FormData();
@@ -66,7 +77,11 @@ export default function SendForm() {
       form.append("coverDetails", JSON.stringify(coverDetails));
     }
     try {
-      const res = await fetch("/api/faxes", { method: "POST", body: form });
+      const res = await fetch("/api/faxes", { method: "POST", body: form }).catch((err) => {
+        // Never reached the server (connection dropped), so the server didn't count it.
+        report("network");
+        throw err;
+      });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error || "Something went wrong. Please try again.");
       router.push(`/f/${body.token}`);
@@ -239,6 +254,10 @@ export default function SendForm() {
         {busy ? "Preparing your fax…" : "Review price and send"}
       </button>
       <p className="mt-2 text-center text-xs text-ink-faint">You'll see the exact page count and price before paying.</p>
+      <p className="mt-1 text-center text-xs text-ink-faint">
+        <span className="inline-block">Card payment by Stripe ·</span> <span className="inline-block">Full refund if it can't be delivered ·</span>{" "}
+        <span className="inline-block">Your document is deleted after sending</span>
+      </p>
     </form>
   );
 }

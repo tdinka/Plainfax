@@ -7,6 +7,7 @@ import { DRAFTS_PER_HOUR_PER_VISITOR, MAX_DOC_PAGES, MAX_UPLOAD_BYTES, priceForP
 import { parseFaxNumber, formatFaxNumber } from "@/lib/phone";
 import { addCoverPage, buildDocument, UserFacingError, type UploadedFile } from "@/lib/pdf";
 import { hashIp, newToken } from "@/lib/tokens";
+import { recordFormError, type FormErrorKind } from "@/lib/formErrors";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +20,9 @@ const coverSchema = z.object({
   message: z.string().max(1500).optional(),
 });
 
-function fail(error: string, status = 400) {
+// Every error the visitor sees is counted by kind for the stats page.
+async function fail(error: string, kind: FormErrorKind, status = 400) {
+  await recordFormError(kind);
   return NextResponse.json({ error }, { status });
 }
 
@@ -28,14 +31,14 @@ export async function POST(req: Request) {
   try {
     form = await req.formData();
   } catch {
-    return fail("We couldn't read that upload. Please try again.");
+    return fail("We couldn't read that upload. Please try again.", "bad_upload");
   }
 
   const phone = parseFaxNumber(String(form.get("to") || ""));
-  if (!phone.ok) return fail(phone.error);
+  if (!phone.ok) return fail(phone.error, "number_invalid");
 
   const email = String(form.get("email") || "").trim();
-  if (email && !z.string().email().safeParse(email).success) return fail("That email address doesn't look right.");
+  if (email && !z.string().email().safeParse(email).success) return fail("That email address doesn't look right.", "email_invalid");
 
   // Where the visitor came from, e.g. "gads" for a Google ad. Anything odd is ignored.
   const ref = String(form.get("ref") || "");
@@ -45,21 +48,21 @@ export async function POST(req: Request) {
   let cover: z.infer<typeof coverSchema> = {};
   if (wantsCover) {
     const parsed = coverSchema.safeParse(JSON.parse(String(form.get("coverDetails") || "{}")));
-    if (!parsed.success) return fail("Some cover page fields are too long.");
+    if (!parsed.success) return fail("Some cover page fields are too long.", "cover_too_long");
     cover = parsed.data;
   }
 
   const entries = form.getAll("files").filter((f): f is File => typeof f !== "string");
-  if (!entries.length) return fail("Add at least one file to fax.");
-  if (entries.length > 20) return fail("You can attach up to 20 files per fax.");
+  if (!entries.length) return fail("Add at least one file to fax.", "no_file");
+  if (entries.length > 20) return fail("You can attach up to 20 files per fax.", "too_many_files");
   const total = entries.reduce((n, f) => n + f.size, 0);
-  if (total > MAX_UPLOAD_BYTES) return fail("Files are limited to 20 MB in total. Try a smaller scan or fewer photos.");
+  if (total > MAX_UPLOAD_BYTES) return fail("Files are limited to 20 MB in total. Try a smaller scan or fewer photos.", "too_big");
 
   // Simple abuse limit per visitor, without storing their IP address.
   const ipHash = hashIp(req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip"));
   if (ipHash) {
     const recent = await prisma.fax.count({ where: { ipHash, createdAt: { gte: new Date(Date.now() - 3600_000) } } });
-    if (recent >= DRAFTS_PER_HOUR_PER_VISITOR) return fail("Too many faxes started in the last hour. Please wait a bit.", 429);
+    if (recent >= DRAFTS_PER_HOUR_PER_VISITOR) return fail("Too many faxes started in the last hour. Please wait a bit.", "rate_limit", 429);
   }
 
   try {
@@ -68,7 +71,7 @@ export async function POST(req: Request) {
     );
     const { doc, pageCount } = await buildDocument(files);
     if (pageCount > MAX_DOC_PAGES) {
-      throw new UserFacingError(`That's ${pageCount} pages. Faxes are limited to ${MAX_DOC_PAGES} pages, so split it into two.`);
+      throw new UserFacingError(`That's ${pageCount} pages. Faxes are limited to ${MAX_DOC_PAGES} pages, so split it into two.`, "too_many_pages");
     }
     const totalPages = pageCount + (wantsCover ? 1 : 0);
     if (wantsCover) await addCoverPage(doc, cover, { toNumber: formatFaxNumber(phone.e164), totalPages, date: new Date() });
@@ -97,8 +100,8 @@ export async function POST(req: Request) {
     });
     return NextResponse.json({ token: fax.token });
   } catch (err) {
-    if (err instanceof UserFacingError) return fail(err.message);
+    if (err instanceof UserFacingError) return fail(err.message, err.kind ?? "bad_upload");
     console.error("create fax failed", err);
-    return fail("Something went wrong preparing your fax. Please try again.", 500);
+    return fail("Something went wrong preparing your fax. Please try again.", "server", 500);
   }
 }

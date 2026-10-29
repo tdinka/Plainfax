@@ -1,6 +1,7 @@
 // Builds the one PDF that gets faxed: optional cover page + every uploaded file.
 // Also makes the delivery confirmation PDF people can download afterwards.
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import type { FormErrorKind } from "@/lib/formErrors";
 
 const LETTER: [number, number] = [612, 792]; // 8.5 x 11 in, in points
 const MARGIN = 36;
@@ -15,7 +16,11 @@ export type CoverDetails = {
   message?: string;
 };
 
-export class UserFacingError extends Error {}
+export class UserFacingError extends Error {
+  constructor(message: string, readonly kind?: FormErrorKind) {
+    super(message);
+  }
+}
 
 /**
  * The fax cover page uses the built-in Helvetica font, which only covers
@@ -53,7 +58,7 @@ function looksLike(bytes: Uint8Array, k: "pdf" | "jpg" | "png"): boolean {
 }
 
 export async function buildDocument(files: UploadedFile[]): Promise<{ doc: PDFDocument; pageCount: number }> {
-  if (!files.length) throw new UserFacingError("Add at least one file to fax.");
+  if (!files.length) throw new UserFacingError("Add at least one file to fax.", "no_file");
   const out = await PDFDocument.create();
 
   for (const file of files) {
@@ -61,13 +66,14 @@ export async function buildDocument(files: UploadedFile[]): Promise<{ doc: PDFDo
     if (k === "heic") {
       throw new UserFacingError(
         `${file.name} is an iPhone HEIC photo. Choose it from your Photos library instead of Files (iPhone converts it to JPG), or save it as JPG first.`,
+        "heic",
       );
     }
     if (k === "other") {
-      throw new UserFacingError(`${file.name} isn't a PDF, JPG or PNG. Those are the formats we can fax.`);
+      throw new UserFacingError(`${file.name} isn't a PDF, JPG or PNG. Those are the formats we can fax.`, "wrong_type");
     }
     if (!looksLike(file.bytes, k)) {
-      throw new UserFacingError(`${file.name} looks damaged or isn't really a ${k.toUpperCase()} file.`);
+      throw new UserFacingError(`${file.name} looks damaged or isn't really a ${k.toUpperCase()} file.`, "damaged");
     }
 
     if (k === "pdf") {
@@ -77,9 +83,9 @@ export async function buildDocument(files: UploadedFile[]): Promise<{ doc: PDFDo
       } catch (err) {
         const msg = err instanceof Error ? err.message : "";
         if (/encrypt/i.test(msg)) {
-          throw new UserFacingError(`${file.name} is password-protected. Remove the password and upload it again.`);
+          throw new UserFacingError(`${file.name} is password-protected. Remove the password and upload it again.`, "password_pdf");
         }
-        throw new UserFacingError(`We couldn't read ${file.name}. Try saving it as a new PDF and uploading again.`);
+        throw new UserFacingError(`We couldn't read ${file.name}. Try saving it as a new PDF and uploading again.`, "unreadable_pdf");
       }
       const pages = await out.copyPages(src, src.getPageIndices());
       pages.forEach((p) => out.addPage(p));

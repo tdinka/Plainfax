@@ -1,6 +1,8 @@
 // Visit counts from Cloudflare Web Analytics (the beacon in layout.tsx), for the
 // stats page. Read-only; nothing about visitors is stored by us. Returns null when
 // the Cloudflare settings are missing or the request fails, so the page still works.
+// Leaves out the owner's /stats views, and page loads with no recognizable browser
+// (mostly bots, such as Google checking the ad's landing page).
 
 const API = "https://api.cloudflare.com/client/v4/graphql";
 // Over about a week, Cloudflare answers with a sampled estimate (rounded to tens)
@@ -31,7 +33,13 @@ async function queryRange(from: Date, to: Date): Promise<Visits> {
       query: QUERY,
       variables: {
         account: process.env.CLOUDFLARE_ACCOUNT_ID,
-        filter: { siteTag: process.env.CLOUDFLARE_SITE_TAG, datetime_geq: from.toISOString(), datetime_lt: to.toISOString() },
+        filter: {
+          siteTag: process.env.CLOUDFLARE_SITE_TAG,
+          datetime_geq: from.toISOString(),
+          datetime_lt: to.toISOString(),
+          requestPath_neq: "/stats",
+          userAgentBrowser_neq: "Unknown",
+        },
       },
     }),
     cache: "no-store",

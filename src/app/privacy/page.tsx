@@ -7,9 +7,10 @@ export default function Privacy() {
   return (
     <article className="mx-auto max-w-2xl px-4 py-12 text-ink sm:px-6 [&_h2]:mt-8 [&_h2]:font-display [&_h2]:text-lg [&_h2]:font-semibold [&_p]:mt-3 [&_p]:text-ink-soft">
       <h1 className="font-display text-3xl font-bold">Privacy</h1>
-      <p>Last updated: October 28, 2026</p>
+      <p>Last updated: October 29, 2026</p>
       <h2>What we keep</h2>
       <p>For each fax we keep the number it went to, the page count, the file names, the delivery result, and your email if you gave one. If you came from one of our ads, we also note that, using a tag in the ad's link rather than a cookie.</p>
+      <p>When the send form shows an error, such as a fax number that's too short, we note which kind of error it was and when. We don't save your files, the number or your email with it.</p>
       <p>We keep these records as long as we need them for support questions, refunds, and our tax and accounting records. Ask us and we'll delete yours sooner, unless the law requires us to keep it.</p>
       <h2>What we delete</h2>
       <p>The document itself is deleted from our servers as soon as the fax is delivered or our final attempt ends. That includes the cover page, if you added one, with the names, contact details and message you typed into it.</p>

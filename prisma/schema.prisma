@@ -69,3 +69,13 @@ model FaxEvent {
 
   @@index([faxId, createdAt])
 }
+
+// One row each time the send form showed an error, for the stats page.
+// Only the kind of error (see src/lib/formErrors.ts) and the time; nothing personal.
+model FormError {
+  id        String   @id @default(cuid())
+  kind      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

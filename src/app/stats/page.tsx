@@ -5,6 +5,7 @@ import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/config";
 import { visitsBetween } from "@/lib/visitors";
+import { FORM_ERROR_KINDS, type FormErrorKind } from "@/lib/formErrors";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Stats", robots: { index: false, follow: false } };
@@ -18,10 +19,17 @@ const realFaxes: Prisma.FaxWhereInput = {
 // Faxes started from a Google ad link (?ref=gads), saved by /api/faxes.
 const fromAds: Prisma.FaxWhereInput = { events: { some: { type: "source", detail: "gads" } } };
 
+// Errors the send form showed, by kind (src/lib/formErrors.ts). null if the
+// FormError table isn't in the database yet, so the rest of the page still works.
+async function formErrorCount(since: Date) {
+  return prisma.formError.count({ where: { createdAt: { gte: since } } }).catch(() => null);
+}
+
 async function periodStats(since: Date | null) {
   const base: Prisma.FaxWhereInput = since ? { AND: [realFaxes, { createdAt: { gte: since } }] } : realFaxes;
-  const [visits, uploads, paid, paidFromAds, delivered, failed, refunded, paidSum, refundedSum] = await Promise.all([
+  const [visits, formErrors, uploads, paid, paidFromAds, delivered, failed, refunded, paidSum, refundedSum] = await Promise.all([
     visitsBetween(since && since > STATS_START ? since : STATS_START, new Date()),
+    formErrorCount(since && since > STATS_START ? since : STATS_START),
     prisma.fax.count({ where: base }),
     prisma.fax.count({ where: { AND: [base, { paidAt: { not: null } }] } }),
     prisma.fax.count({ where: { AND: [base, fromAds, { paidAt: { not: null } }] } }),
@@ -32,7 +40,7 @@ async function periodStats(since: Date | null) {
     prisma.fax.aggregate({ where: { AND: [base, { refundedAt: { not: null } }] }, _sum: { priceCents: true } }),
   ]);
   const kept = (paidSum._sum.priceCents ?? 0) - (refundedSum._sum.priceCents ?? 0);
-  return { visits, uploads, paid, paidFromAds, delivered, failed, refunded, kept };
+  return { visits, formErrors, uploads, paid, paidFromAds, delivered, failed, refunded, kept };
 }
 
 function pct(part: number, whole: number): string {
@@ -56,11 +64,21 @@ export default async function Stats() {
     },
   });
 
+  const errorKinds = await prisma.formError
+    .groupBy({ by: ["kind"], where: { createdAt: { gte: STATS_START } }, _count: { _all: true }, orderBy: { _count: { kind: "desc" } } })
+    .catch(() => null);
+
   const rows: [string, (s: (typeof periods)[number]["stats"]) => string, string?][] = [
-    ["Visits", (s) => (s.visits ? String(s.visits.visits) : "–"), "From Cloudflare Web Analytics; one visit can view several pages"],
+    ["Visits", (s) => (s.visits ? String(s.visits.visits) : "–"), "From Cloudflare Web Analytics, leaving out /stats and bots; one visit can view several pages"],
     ["Page views", (s) => (s.visits ? String(s.visits.pageViews) : "–")],
     ["Uploads", (s) => String(s.uploads), "Started a fax (uploaded a document)"],
     ["Visit to upload", (s) => (s.visits ? pct(s.uploads, s.visits.visits) : "–"), "Share of visits that started a fax"],
+    ["Form errors", (s) => (s.formErrors === null ? "–" : String(s.formErrors)), "Times the form showed an error; kinds are listed below"],
+    [
+      "Error rate",
+      (s) => (s.formErrors === null ? "–" : pct(s.formErrors, s.formErrors + s.uploads)),
+      "Share of tries at sending that hit an error instead of uploading",
+    ],
     ["Paid", (s) => String(s.paid)],
     ["Upload to paid", (s) => pct(s.paid, s.uploads), "Plan's early target: 30% or more"],
     ["Paid from ads", (s) => String(s.paidFromAds), "Came from a Google ad link (?ref=gads)"],
@@ -109,6 +127,24 @@ export default async function Stats() {
           </tbody>
         </table>
       </div>
+
+      <h2 className="mt-10 font-display text-xl font-bold">Form errors by kind</h2>
+      {!errorKinds?.length ? (
+        <p className="mt-2 text-sm text-ink-soft">{errorKinds ? "No form errors since Oct 28." : "Not counting yet (the FormError table isn't in the database)."}</p>
+      ) : (
+        <div className="mt-3 overflow-x-auto rounded-xl border border-line bg-white">
+          <table className="w-full text-left text-sm">
+            <tbody className="divide-y divide-line">
+              {errorKinds.map((e) => (
+                <tr key={e.kind}>
+                  <td className="px-4 py-2">{FORM_ERROR_KINDS[e.kind as FormErrorKind] ?? e.kind}</td>
+                  <td className="px-4 py-2 text-right font-mono">{e._count._all}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <h2 className="mt-10 font-display text-xl font-bold">Recent faxes</h2>
       {recent.length === 0 ? (
