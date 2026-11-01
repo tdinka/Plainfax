@@ -1,9 +1,11 @@
 // Owner-only numbers for the 90-day review: uploads, paid, delivered, refunded.
 // Password-protected by src/middleware.ts. Faxes sent on the simulated line
-// (testing before go-live), and anything started before STATS_START, are left out.
+// (testing before go-live), anything started before STATS_START, and your own
+// test faxes (STATS_TEST_NUMBERS) are left out.
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/config";
+import { parseFaxNumber } from "@/lib/phone";
 import { visitsBetween } from "@/lib/visitors";
 import { FORM_ERROR_KINDS, type FormErrorKind } from "@/lib/formErrors";
 
@@ -16,6 +18,14 @@ const STATS_START = new Date("2026-10-28T00:00:00-07:00");
 const realFaxes: Prisma.FaxWhereInput = {
   AND: [{ createdAt: { gte: STATS_START } }, { OR: [{ provider: null }, { provider: { not: "mock" } }] }],
 };
+// Your own test faxes: anything sent to a number in STATS_TEST_NUMBERS (comma-separated)
+// is listed under Recent faxes but left out of the counts. Read per request, not at build.
+function testNumbers(): string[] {
+  return (process.env.STATS_TEST_NUMBERS ?? "").split(",").flatMap((n) => {
+    const r = parseFaxNumber(n);
+    return r.ok ? [r.e164] : [];
+  });
+}
 // Faxes started from a Google ad link (?ref=gads), saved by /api/faxes.
 const fromAds: Prisma.FaxWhereInput = { events: { some: { type: "source", detail: "gads" } } };
 
@@ -26,7 +36,9 @@ async function formErrorCount(since: Date) {
 }
 
 async function periodStats(since: Date | null) {
-  const base: Prisma.FaxWhereInput = since ? { AND: [realFaxes, { createdAt: { gte: since } }] } : realFaxes;
+  const base: Prisma.FaxWhereInput = {
+    AND: [realFaxes, { toNumber: { notIn: testNumbers() } }, ...(since ? [{ createdAt: { gte: since } }] : [])],
+  };
   const [visits, formErrors, uploads, paid, paidFromAds, delivered, failed, refunded, paidSum, refundedSum] = await Promise.all([
     visitsBetween(since && since > STATS_START ? since : STATS_START, new Date()),
     formErrorCount(since && since > STATS_START ? since : STATS_START),
@@ -63,6 +75,8 @@ export default async function Stats() {
       events: { where: { type: "source" }, select: { detail: true } },
     },
   });
+
+  const tests = testNumbers();
 
   const errorKinds = await prisma.formError
     .groupBy({ by: ["kind"], where: { createdAt: { gte: STATS_START } }, _count: { _all: true }, orderBy: { _count: { kind: "desc" } } })
@@ -173,7 +187,7 @@ export default async function Stats() {
                   <td className="px-4 py-2 text-right font-mono">{f.totalPages}</td>
                   <td className="px-4 py-2 text-right font-mono">{formatPrice(f.priceCents)}</td>
                   <td className="px-4 py-2 text-xs text-ink-soft">
-                    {[f.events[0] && `from ${f.events[0].detail}`, f.refundedAt && "refunded", f.attempts > 1 && `${f.attempts} attempts`]
+                    {[tests.includes(f.toNumber) && "your test, not counted", f.events[0] && `from ${f.events[0].detail}`, f.refundedAt && "refunded", f.attempts > 1 && `${f.attempts} attempts`]
                       .filter(Boolean)
                       .join(", ")}
                   </td>
