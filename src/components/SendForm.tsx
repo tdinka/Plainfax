@@ -28,6 +28,7 @@ export default function SendForm() {
   const router = useRouter();
   const fileInput = useRef<HTMLInputElement>(null);
   const cameraInput = useRef<HTMLInputElement>(null);
+  const dropZone = useRef<HTMLDivElement>(null);
   const [files, setFiles] = useState<Picked[]>([]);
   const [dragging, setDragging] = useState(false);
   const [to, setTo] = useState("");
@@ -35,6 +36,7 @@ export default function SendForm() {
   const [cover, setCover] = useState(false);
   const [coverDetails, setCoverDetails] = useState({ toName: "", fromName: "", fromContact: "", subject: "", message: "" });
   const [error, setError] = useState<string | null>(null);
+  const [needDoc, setNeedDoc] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const add = (list: FileList | null) => {
@@ -46,6 +48,7 @@ export default function SendForm() {
     }));
     setFiles((cur) => [...cur, ...next].slice(0, 20));
     setError(null);
+    setNeedDoc(false);
   };
   const remove = (id: string) =>
     setFiles((cur) => {
@@ -66,8 +69,16 @@ export default function SendForm() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!files.length) {
+      // People often press the main button first, expecting it to ask for the
+      // document, so open the file chooser instead of only showing an error.
+      // (On iPhone and Android it also offers the camera and photo library.)
+      // The reminder shows in the document box, which is scrolled into view.
       report("no_file");
-      return setError("Add the document you want to fax.");
+      setError(null);
+      setNeedDoc(true);
+      dropZone.current?.scrollIntoView({ block: "center" });
+      fileInput.current?.click();
+      return;
     }
     if (digits.length !== 10) {
       report("number_incomplete");
@@ -109,6 +120,7 @@ export default function SendForm() {
       <div className="mt-4">
         <span className="label">Document</span>
         <div
+          ref={dropZone}
           onDragOver={(e) => {
             e.preventDefault();
             setDragging(true);
@@ -120,9 +132,14 @@ export default function SendForm() {
             add(e.dataTransfer.files);
           }}
           className={`rounded-lg border-2 border-dashed px-4 py-6 text-center transition ${
-            dragging ? "border-signal bg-signal-50" : "border-line bg-paper-50"
+            dragging ? "border-signal bg-signal-50" : needDoc ? "border-alert bg-alert-50" : "border-line bg-paper-50"
           }`}
         >
+          {needDoc && (
+            <p role="alert" className="mb-2 text-sm font-medium text-alert">
+              First, add the document you want to fax.
+            </p>
+          )}
           <p className="hidden text-sm text-ink-soft sm:block">Drop a PDF or photos here, or</p>
           <p className="text-sm font-medium sm:hidden">Add your document</p>
           <div className="mt-3 flex flex-wrap justify-center gap-2">
