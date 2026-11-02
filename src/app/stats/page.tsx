@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/config";
 import { parseFaxNumber } from "@/lib/phone";
 import { visitsBetween } from "@/lib/visitors";
+import { OwnerDevice } from "@/components/VisitCounter";
 import { FORM_ERROR_KINDS, type FormErrorKind } from "@/lib/formErrors";
 
 export const dynamic = "force-dynamic";
@@ -83,7 +84,7 @@ export default async function Stats() {
     .catch(() => null);
 
   const rows: [string, (s: (typeof periods)[number]["stats"]) => string, string?][] = [
-    ["Visits", (s) => (s.visits ? String(s.visits.visits) : "–"), "From Cloudflare Web Analytics, leaving out /stats and bots; one visit can view several pages"],
+    ["Visits", (s) => (s.visits ? String(s.visits.visits) : "–"), "From Cloudflare Web Analytics: US and Canada only, leaving out /stats, bots and your own devices; one visit can view several pages"],
     ["Page views", (s) => (s.visits ? String(s.visits.pageViews) : "–")],
     ["Uploads", (s) => String(s.uploads), "Started a fax (uploaded a document)"],
     ["Visit to upload", (s) => (s.visits ? pct(s.uploads, s.visits.visits) : "–"), "Share of visits that started a fax"],
@@ -109,8 +110,9 @@ export default async function Stats() {
       <p className="eyebrow">Private</p>
       <h1 className="mt-2 font-display text-3xl font-bold">Stats</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        Counted by the day each fax was started, from October 28, 2026 on. Visits come from Cloudflare Web Analytics (your own visits count too); Google searches are in Search Console.
+        Counted by the day each fax was started, from October 28, 2026 on. Visits come from Cloudflare Web Analytics; Google searches are in Search Console.
       </p>
+      <OwnerDevice />
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-line bg-white">
         <table className="w-full min-w-[520px] text-left text-sm">

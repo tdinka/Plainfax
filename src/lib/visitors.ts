@@ -1,8 +1,10 @@
-// Visit counts from Cloudflare Web Analytics (the beacon in layout.tsx), for the
+// Visit counts from Cloudflare Web Analytics (src/components/VisitCounter.tsx), for the
 // stats page. Read-only; nothing about visitors is stored by us. Returns null when
 // the Cloudflare settings are missing or the request fails, so the page still works.
 // Leaves out the owner's /stats views, and page loads with no recognizable browser
-// (mostly bots, such as Google checking the ad's landing page).
+// (mostly bots, such as Google checking the ad's landing page), and visits from
+// outside the US and Canada: customers can only fax there, so those are mostly bots.
+// VisitCounter.tsx also skips the owner's own devices.
 
 const API = "https://api.cloudflare.com/client/v4/graphql";
 // Over about a week, Cloudflare answers with a sampled estimate (rounded to tens)
@@ -39,6 +41,7 @@ async function queryRange(from: Date, to: Date): Promise<Visits> {
           datetime_lt: to.toISOString(),
           requestPath_neq: "/stats",
           userAgentBrowser_neq: "Unknown",
+          countryName_in: ["US", "CA"],
         },
       },
     }),
