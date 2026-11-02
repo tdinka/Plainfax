@@ -41,7 +41,11 @@ async function periodStats(since: Date | null) {
     AND: [realFaxes, { toNumber: { notIn: testNumbers() } }, ...(since ? [{ createdAt: { gte: since } }] : [])],
   };
   const [visits, formErrors, uploads, paid, paidFromAds, delivered, failed, refunded, paidSum, refundedSum] = await Promise.all([
-    visitsBetween(since && since > STATS_START ? since : STATS_START, new Date()),
+    (async (t0) => {
+      const v = await visitsBetween(since && since > STATS_START ? since : STATS_START, new Date());
+      console.log("stats cloudflare (ms)", Date.now() - t0);
+      return v;
+    })(Date.now()),
     formErrorCount(since && since > STATS_START ? since : STATS_START),
     prisma.fax.count({ where: base }),
     prisma.fax.count({ where: { AND: [base, { paidAt: { not: null } }] } }),
@@ -62,26 +66,38 @@ function pct(part: number, whole: number): string {
 
 export default async function Stats() {
   const now = Date.now();
+  // All three columns, the fax list and the error kinds are fetched at the same time.
+  // Each part's time goes to the server log ("stats timings"), to see what's slow.
+  const took: Record<string, number> = {};
+  const timed = <T,>(label: string, work: Promise<T>) => work.finally(() => (took[label] = Date.now() - now));
+  const [week, month, all, recent, errorKinds] = await Promise.all([
+    timed("week", periodStats(new Date(now - 7 * DAY))),
+    timed("month", periodStats(new Date(now - 30 * DAY))),
+    timed("all", periodStats(null)),
+    timed("recent", prisma.fax.findMany({
+      where: realFaxes,
+      orderBy: { createdAt: "desc" },
+      take: 25,
+      select: {
+        createdAt: true, status: true, toNumber: true, totalPages: true, priceCents: true, paidAt: true, refundedAt: true, attempts: true,
+        events: { where: { type: "source" }, select: { detail: true } },
+      },
+    })),
+    timed(
+      "errorKinds",
+      prisma.formError
+        .groupBy({ by: ["kind"], where: { createdAt: { gte: STATS_START } }, _count: { _all: true }, orderBy: { _count: { kind: "desc" } } })
+        .catch(() => null),
+    ),
+  ]);
+  console.log("stats timings (ms)", JSON.stringify(took));
   const periods = [
-    { label: "Last 7 days", stats: await periodStats(new Date(now - 7 * DAY)) },
-    { label: "Last 30 days", stats: await periodStats(new Date(now - 30 * DAY)) },
-    { label: "Since Oct 28", stats: await periodStats(null) },
+    { label: "Last 7 days", stats: week },
+    { label: "Last 30 days", stats: month },
+    { label: "Since Oct 28", stats: all },
   ];
-  const recent = await prisma.fax.findMany({
-    where: realFaxes,
-    orderBy: { createdAt: "desc" },
-    take: 25,
-    select: {
-      createdAt: true, status: true, toNumber: true, totalPages: true, priceCents: true, paidAt: true, refundedAt: true, attempts: true,
-      events: { where: { type: "source" }, select: { detail: true } },
-    },
-  });
 
   const tests = testNumbers();
-
-  const errorKinds = await prisma.formError
-    .groupBy({ by: ["kind"], where: { createdAt: { gte: STATS_START } }, _count: { _all: true }, orderBy: { _count: { kind: "desc" } } })
-    .catch(() => null);
 
   const rows: [string, (s: (typeof periods)[number]["stats"]) => string, string?][] = [
     ["Visits", (s) => (s.visits ? String(s.visits.visits) : "–"), "From Cloudflare Web Analytics: US and Canada only, leaving out /stats, bots and your own devices; one visit can view several pages"],
