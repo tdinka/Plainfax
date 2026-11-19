@@ -18,7 +18,10 @@ export default function GuidePage({ slug }: { slug: string }) {
         <div className="min-w-0 lg:pt-6">
           <p className="eyebrow">{g.eyebrow}</p>
           <h1 className="mt-3 font-display text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl">{g.title}</h1>
-          <p className="mt-5 max-w-[52ch] text-lg text-ink-soft">{g.intro}</p>
+          <p className="mt-5 max-w-[52ch] text-lg">
+            <strong className="font-semibold">{g.answer[0]}</strong> {g.answer[1]}
+          </p>
+          <p className="mt-3 max-w-[52ch] text-ink-soft">{g.intro}</p>
           <ol className="mt-6 space-y-3">
             {g.steps.map((step, i) => (
               <li key={step} className="flex gap-3 text-sm">
