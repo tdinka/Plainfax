@@ -5,7 +5,7 @@ import { GUIDES, getGuide } from "@/lib/guides";
 
 export function guideMetadata(slug: string): Metadata {
   const g = getGuide(slug);
-  return { title: g.metaTitle, description: g.description };
+  return { title: g.metaTitle, description: g.description, alternates: { canonical: `/${slug}` } };
 }
 
 export default function GuidePage({ slug }: { slug: string }) {

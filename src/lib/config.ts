@@ -2,6 +2,9 @@
 
 export const APP_NAME = "Fax Just Once";
 export const SUPPORT_EMAIL = "support@faxjustonce.com";
+// The one address search engines should list. Fixed rather than read from APP_URL,
+// because pages are built before Railway's live variables are guaranteed to be there.
+export const SITE_URL = "https://faxjustonce.com";
 
 export const MAX_DOC_PAGES = 50;
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB total

@@ -1,7 +1,7 @@
 // TODO before go-live: have these terms reviewed (a lawyer or a reputable template service).
 import { APP_NAME, SUPPORT_EMAIL } from "@/lib/config";
 
-export const metadata = { title: `Terms of service | ${APP_NAME}` };
+export const metadata = { title: `Terms of service | ${APP_NAME}`, alternates: { canonical: "/terms" } };
 
 export default function Terms() {
   return (

@@ -1,6 +1,8 @@
 import SendForm from "@/components/SendForm";
 import { APP_NAME, PRICE_TIERS, formatPrice } from "@/lib/config";
 
+export const metadata = { alternates: { canonical: "/" } };
+
 const steps = [
   ["Upload", "A PDF from your computer, or snap photos of the pages with your phone."],
   ["Enter the number", "Any US or Canada fax number. Add a free cover page if you like."],

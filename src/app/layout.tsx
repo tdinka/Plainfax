@@ -5,11 +5,14 @@ import "@fontsource-variable/public-sans";
 import "@fontsource/ibm-plex-mono/400.css";
 import "@fontsource/ibm-plex-mono/500.css";
 import "./globals.css";
-import { APP_NAME, SUPPORT_EMAIL } from "@/lib/config";
+import { APP_NAME, SITE_URL, SUPPORT_EMAIL } from "@/lib/config";
 import { GUIDES } from "@/lib/guides";
 import VisitCounter from "@/components/VisitCounter";
 
+// Each public page sets its own canonical address (relative to metadataBase), so copies
+// such as ?ref=gads links count as the same page in Google.
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: `${APP_NAME}: Send a fax online for $2.99, no subscription`,
   description:
     "Send a fax from your phone or computer. Upload a PDF or photo, enter the fax number, pay $2.99 once. Automatic refund if it can't be delivered.",

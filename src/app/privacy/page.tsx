@@ -1,7 +1,7 @@
 // TODO before go-live: have this policy reviewed alongside the terms.
 import { APP_NAME, SUPPORT_EMAIL } from "@/lib/config";
 
-export const metadata = { title: `Privacy | ${APP_NAME}` };
+export const metadata = { title: `Privacy | ${APP_NAME}`, alternates: { canonical: "/privacy" } };
 
 export default function Privacy() {
   return (
