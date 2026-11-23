@@ -63,6 +63,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="-my-3 flex gap-5">
               <Link href="/terms" className="inline-flex min-h-11 items-center hover:text-ink">Terms</Link>
               <Link href="/privacy" className="inline-flex min-h-11 items-center hover:text-ink">Privacy</Link>
+              {/* SaaSHub's badge as a plain text link: their image would load from SaaSHub's
+                  server on every page and pass visitors' addresses to them, which the Privacy page doesn't cover. */}
+              <a
+                href="https://www.saashub.com/fax-just-once?utm_source=badge&utm_campaign=badge&utm_content=fax-just-once&badge_variant=color&badge_kind=approved"
+                target="_blank"
+                rel="noopener"
+                className="inline-flex min-h-11 items-center hover:text-ink"
+              >
+                Approved on SaaSHub
+              </a>
             </div>
           </div>
         </footer>
